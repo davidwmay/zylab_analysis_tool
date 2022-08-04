@@ -131,7 +131,7 @@ if __name__ == "__main__":
     # Write IncDev results to csv
     with open(os.path.join('output', 'output_' + filename), 'w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['User ID', 'Name', 'Email', 'Lab ID', 'IncDev Score', 'IncDev Trail', 'LOC Trail', 'Time Trail', 'Coding Trail', 'Drastic Change Trail'])
+        writer.writerow(['User ID', 'Name', 'Email', 'Lab ID', 'IncDev Score', 'IncDev Trail', 'LOC Trail', 'Time Between Subs Trail', 'Coding Trail', 'Drastic Change Trail'])
         for user_id in output:
             uid = user_id
             name = metadata[user_id]['name']
@@ -147,7 +147,6 @@ if __name__ == "__main__":
                 dc_trail = output[user_id][lab_id]['drastic_change_trail']
                 lab_specific_cols += ([lid, score, score_trail, loc_trail, time_trail, coding_trail, dc_trail])
             row = [uid, name, email] + lab_specific_cols
-            # writer.writerow([uid, name, email, lid, score, score_trail, loc_trail, time_trail])
             writer.writerow(row)
 
     print('Success! ' + output_file + ' has been generated.')
