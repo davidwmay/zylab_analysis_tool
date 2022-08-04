@@ -1,6 +1,6 @@
 Overview:
 
-This tool takes a .csv log file as input, performs Incremental Development analysis on it, and outputs a .csv of the results.
+This tool takes a .csv log file as input, performs analysis on it, and outputs a .csv of the results.
 
 The columns that it produces are:
 1. User ID
@@ -27,7 +27,7 @@ How to run:
 
 Notes:
 
-1. The input log file must be placed in the 'input' folder. The output will be produced in the 'output' folder.
+1. The input log file must be placed in the 'input' folder. The output will be produced in the 'output' folder. You may need to create the input folder manually.
 2. Python3/pip should be installed in order to run the commands given above. Tutorials for installing these can be found online.
 3. Currently, only one lab can be analyzed at a time. Using an input file that includes multiple labs will not produce accurate results.
 4. Excel and Google Sheets sometimes erroneously apply formatting to the data, making it look incorrect. To avoid this, see below.
