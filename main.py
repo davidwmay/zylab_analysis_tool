@@ -94,6 +94,12 @@ if __name__ == "__main__":
     logfile = pd.read_csv(filepath)
     logfile = logfile[logfile.role == 'Student']
 
+    # Update column names if necessary
+    # Enables support for log files from learn.zybooks.com and Mode
+    logfile.columns = logfile.columns.str.replace('\(US/Pacific\)', '', regex=True)
+    logfile.columns = logfile.columns.str.replace('is_submission', 'submission')
+    logfile.columns = logfile.columns.str.replace('content_resource_id', 'lab_id')
+
     for row in logfile.itertuples():
         if row.user_id not in data:
             data[row.user_id] = {}
@@ -101,14 +107,13 @@ if __name__ == "__main__":
             metadata[row.user_id]['name'] = row.first_name + ' ' + row.last_name
             metadata[row.user_id]['email'] = row.email
         if row.content_section not in data[row.user_id]:
-            data[row.user_id][row.content_section] = {}
             data[row.user_id][row.content_section] = []
         # Download code submission
         url, result = get_code(row.zip_location)
         # Create new Submission object, add to dict
         sub = Submission(
             student_id = row.user_id,
-            crid = row.content_resource_id,
+            crid = row.lab_id,
             lab_id = row.content_section,
             submission_id = row.zip_location.split('/')[-1],
             type = row.submission,

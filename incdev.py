@@ -39,7 +39,7 @@ def run(data):
 
     incdev_data = {}
 
-    incdev_data_fields = ['incdev_score', 'incdev_score_trail', 'loc_trail', 'time_trail', 'coding_trail']
+    incdev_data_fields = ['incdev_score', 'incdev_score_trail', 'loc_trail', 'time_trail', 'coding_trail', 'drastic_change_trail']
 
     for user_id in data:
         if user_id not in incdev_data:
@@ -130,18 +130,21 @@ def assign_inc_dev_score_trail(runs):
         line_count = len(code.splitlines())
 
         if prev_code != '':
-            change = get_diff(prev_code, code)
-            if change > .5:
+            diff = get_diff(prev_code, code)
+            # Add drastic change marker
+            if diff > .7:
                 inc_dev_trail += '^'
 
         inc_dev_trail += str(line_count) + " "
 
+        # IncDev violation
         if line_count - prev_lines > 20:
             lines_over = line_count - prev_lines - 20
             score -= .04 * lines_over
             inc_dev_trail += '(' + str(round(score, 2)) + '), '
         else:
             score += .1
+            # Cap score at 1
             if score > 1:
                 score = 1
             inc_dev_trail += '(' + str(round(score, 2)) + '), '
@@ -174,6 +177,8 @@ def assign_loc_trail(runs):
     lines = []
     drastic_change = [0]
     prev_code = ''
+
+    # Create drastic change and line count lists
     for run in runs:
         code = os.linesep.join([s for s in run.code.splitlines() if s.strip()])
 
@@ -202,6 +207,7 @@ def assign_loc_trail(runs):
         # Run is not notable
         else:
             relevance_list.append(0)
+    # Always display last line count
     relevance_list.append(1)
 
     # Update list to account for sub-sequence rules
@@ -211,15 +217,20 @@ def assign_loc_trail(runs):
     loc_trail = str(lines[0])
     for i in range(1, len(lines)):
         if relevance_list[i] == 0:
+            # Not a notable run
             loc_trail += '.'
         else:
             if loc_trail[-1] != '.':
+                # Separate line counts with comma
                 loc_trail += ','
             if drastic_change[i] == 1:
+                # Drastic change
                 loc_trail += '^'
             if relevance_list[i] == 1:
+                # Normal relevant run
                 loc_trail += str(lines[i])
             else:
+                # IncDev violation
                 loc_trail += str(lines[i]) + '*'
     return loc_trail
 
@@ -253,6 +264,8 @@ def assign_time_trail(runs):
             sub_times.append(run.sub_time)
         else:
             sub_times.append(-1)
+
+    # Generate list indicating which runs follow a session break
     session_breaks = get_sub_sessions(all_times)
 
     sub_time_trail = ''
@@ -301,7 +314,7 @@ def assign_coding_trail(runs):
         coding_trail : `string`
             Coding trail for a particular student/lab
     """
-    
+
     coding_trail = ''
     coding_trail_data = {}
     coding_trail_data['run_type'] = []
@@ -320,18 +333,24 @@ def assign_coding_trail(runs):
     week_marker = vals['datetime'][0]
     for i in range(len(runs)):
         day = get_day_of_week(vals['datetime'][i])
+
+        # First run, add week marker
         if i == 0:
             coding_trail = vals['datetime'][i].strftime('%m/%d')
             coding_trail += day
         else:
+            # Check if run was made same day as previous run
             if get_day_of_week(vals['datetime'][i - 1]) != day:
+                # Check if run was made more than a week after previous week marker
                 if (vals['datetime'][i].date() - week_marker.date()).days >= 7:
                     coding_trail += vals['datetime'][i].strftime(' %m/%d')
                     week_marker = vals['datetime'][i]
                 coding_trail += day
 
+        # Develop run
         if vals['run_type'][i] == 0:
             coding_trail += '-'
+        # First run, prev run was a develop, or last thing added was a day marker
         elif vals['run_type'][i - 1] == 0 or i == 0 or coding_trail[-1] == ' ':
             coding_trail += str(int(vals['score'][i]))
         else:
@@ -359,12 +378,14 @@ def assign_drastic_change_trail(runs):
     dc_trail = ''
     run_num = 1
     prev_code = ''
+
     for run in runs:
         code = os.linesep.join([s for s in run.code.splitlines() if s.strip()])
+        # Not first run
         if prev_code != '':
             diff = get_diff(prev_code, code)
             if diff > .7:
-                dc_trail += str(run_num) + ', '
+                dc_trail += str(run_num) + ' (' + str(round(diff, 1)) + ')' + ', '
         prev_code = code
         run_num += 1
 
@@ -503,7 +524,7 @@ def get_sub_sessions(run_times):
     session_breaks = [0]
     for i in range(1, len(run_times)):
         diff = get_submission_time_diff(run_times[i - 1], run_times[i])
-        if diff <= 1800:
+        if diff <= 600:
             session_breaks.append(0)
         else:
             session_breaks.append(1)
